@@ -33,7 +33,8 @@ public class Robot extends TimedRobot {
   
   private DifferentialDrive myDrive = new DifferentialDrive(leftSide, rightSide);
   private Joystick myJoy = new Joystick(0);
-  private ADXRS450_Gyro myGyro = new ADXRS450_Gyro();
+  //uncomment when fixed by WPI
+  //private ADXRS450_Gyro myGyro = new ADXRS450_Gyro();
 
   
   
@@ -44,14 +45,14 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
-    myGyro.reset();
-    myGyro.calibrate();
+    //myGyro.reset();
+    //myGyro.calibrate();
     
   }
 
   @Override
   public void robotPeriodic() {
-    SmartDashboard.putData(myGyro);
+    //SmartDashboard.putData(myGyro);
     
    
   }
