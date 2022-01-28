@@ -35,6 +35,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
+    //where's waldo: vscode comment edition
     SmartDashboard.putData("Auto choices", m_chooser);
   
   }
