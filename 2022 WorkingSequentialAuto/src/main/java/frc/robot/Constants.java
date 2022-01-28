@@ -25,6 +25,12 @@ public final class Constants {
     public static final int DRIVE_STICK_PORT = 0;
 
     // Shooter Subsystem constants ///////////////////////////////////////////////////
+
+    public static final int SHOOTER_MOTOR_PORT = 16;
+    public static final int SHOOTER_FORWARD_BUTTON = 1;
+    public static final int SHOOTER_REVERSE_BUTTON = 2;
+    public static final double FORWARD_SHOOT_SPEED = 1;
+    public static final double REVERSE_SHOOT_SPEED = -1;
     /*
     Uncomment when needed
     public static final int SHOOT_STICK_PORT = 1;

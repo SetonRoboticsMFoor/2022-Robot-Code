@@ -8,9 +8,13 @@ import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import frc.robot.commands.DriveTurnDriveAuto;
+import frc.robot.commands.ShooterForwardCom;
+import frc.robot.commands.ShooterReverseCom;
 import frc.robot.commands.TeleDriveCommand;
 import frc.robot.subsystems.DriveTrainSub;
+import frc.robot.subsystems.ShooterSub;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.button.JoystickButton;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -21,15 +25,21 @@ import edu.wpi.first.wpilibj2.command.Command;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final DriveTrainSub m_driveTrainSub = new DriveTrainSub();
+  private final ShooterSub m_shooterSub = new ShooterSub();
   private final TeleDriveCommand m_teleDriveCommand = new TeleDriveCommand(m_driveTrainSub);
   private final DriveTurnDriveAuto m_timedAutoCommand = new DriveTurnDriveAuto(m_driveTrainSub);
   public static Joystick driveStick = new Joystick(Constants.DRIVE_STICK_PORT);
+  public static JoystickButton forwardButton = new JoystickButton(driveStick, Constants.SHOOTER_FORWARD_BUTTON);
+  public static JoystickButton reverseButton = new JoystickButton(driveStick, Constants.SHOOTER_REVERSE_BUTTON);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     m_driveTrainSub.setDefaultCommand(m_teleDriveCommand);
     // Configure the button bindings
     configureButtonBindings();
+    forwardButton.toggleWhenPressed(new ShooterForwardCom(m_shooterSub));
+    reverseButton.toggleWhenPressed(new ShooterReverseCom(m_shooterSub));
+
   }
 
   /**
