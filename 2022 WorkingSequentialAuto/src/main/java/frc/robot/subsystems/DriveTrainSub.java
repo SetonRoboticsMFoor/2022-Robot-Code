@@ -11,7 +11,6 @@ import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
 
@@ -44,9 +43,6 @@ public class DriveTrainSub extends SubsystemBase {
    
   }
 
-  public void getCamera() {
-    CameraServer.startAutomaticCapture();
-  }
 
   public void arcadeDrive(Joystick driveStick, double speed) {
     driveTrain.arcadeDrive(driveStick.getRawAxis(2)* speed, -driveStick.getRawAxis(1) * speed);
