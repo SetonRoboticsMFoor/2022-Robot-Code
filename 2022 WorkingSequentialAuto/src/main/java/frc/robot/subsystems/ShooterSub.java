@@ -9,6 +9,7 @@ import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants;
+import frc.robot.RobotContainer;
 
 public class ShooterSub extends SubsystemBase {
 private final WPI_TalonSRX shooterMotor;
@@ -19,11 +20,15 @@ private final WPI_TalonSRX shooterMotor;
   }
 
   public void spinForward() {
-    shooterMotor.set(ControlMode.PercentOutput, Constants.FORWARD_SHOOT_SPEED);
+    shooterMotor.set(ControlMode.PercentOutput, getShootSpeed());
   }
 
   public void spinReverse() {
-    shooterMotor.set(ControlMode.PercentOutput, Constants.REVERSE_SHOOT_SPEED);
+    shooterMotor.set(ControlMode.PercentOutput, -getShootSpeed());
+  }
+
+  public double getShootSpeed(){
+    return RobotContainer.driveStick.getRawAxis(3);
   }
 
   public void stopMotor() {

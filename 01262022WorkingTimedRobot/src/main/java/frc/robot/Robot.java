@@ -4,7 +4,7 @@ package frc.robot;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
-
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.Joystick;
@@ -33,6 +33,7 @@ public class Robot extends TimedRobot {
   
   private DifferentialDrive myDrive = new DifferentialDrive(leftSide, rightSide);
   private Joystick myJoy = new Joystick(0);
+  private UsbCamera frontCam = new UsbCamera("Front Camera", 0);
   //uncomment when fixed by WPI
   //private ADXRS450_Gyro myGyro = new ADXRS450_Gyro();
 
