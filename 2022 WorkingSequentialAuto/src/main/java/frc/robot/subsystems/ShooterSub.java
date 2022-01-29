@@ -8,7 +8,7 @@ import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import frc.robot.Constants;
+import frc.robot.RobotContainer;
 
 public class ShooterSub extends SubsystemBase {
 
@@ -23,21 +23,24 @@ public class ShooterSub extends SubsystemBase {
 
 
   public void spinForward() {
-    shooterMotor.set(ControlMode.PercentOutput,Constants.FORWARD_SHOOTER_SPEED);
+    shooterMotor.set(ControlMode.PercentOutput,getShootSpeed());
     //.getRawAxis() instead of constant
   }
 
 
   public void spinReverse() {
-    shooterMotor.set(ControlMode.PercentOutput,Constants.REVERSE_SHOOTER_SPEED);
+    shooterMotor.set(ControlMode.PercentOutput,-getShootSpeed());
     //.getRawAxis() instead of constant
+  }
+
+  public double getShootSpeed() {
+    return .75*(RobotContainer.driveStick.getRawAxis(3)+1)+.25;
   }
 
 
   public void stopMotor() {
     shooterMotor.stopMotor();
   }
-
 
   @Override
   public void periodic() {
