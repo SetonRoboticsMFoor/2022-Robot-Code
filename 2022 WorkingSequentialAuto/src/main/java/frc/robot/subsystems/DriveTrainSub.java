@@ -6,6 +6,8 @@ package frc.robot.subsystems;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.motorcontrol.MotorControllerGroup;
@@ -24,6 +26,8 @@ public class DriveTrainSub extends SubsystemBase {
 
   private final DifferentialDrive driveTrain;
 
+
+
   public DriveTrainSub() {
 
     frontLeft = new WPI_TalonSRX(Constants.FRONT_LEFT_MOTOR_PORT);
@@ -35,7 +39,10 @@ public class DriveTrainSub extends SubsystemBase {
     rightSide = new MotorControllerGroup(frontRight, rearRight);
 
     driveTrain = new DifferentialDrive(leftSide, rightSide);
+
+   
   }
+
 
   public void arcadeDrive(Joystick driveStick, double speed) {
     driveTrain.arcadeDrive(driveStick.getRawAxis(2)* speed, -driveStick.getRawAxis(1) * speed);

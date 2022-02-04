@@ -4,7 +4,7 @@ package frc.robot;
 
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 
-
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.Joystick;
@@ -33,7 +33,9 @@ public class Robot extends TimedRobot {
   
   private DifferentialDrive myDrive = new DifferentialDrive(leftSide, rightSide);
   private Joystick myJoy = new Joystick(0);
-  private ADXRS450_Gyro myGyro = new ADXRS450_Gyro();
+  private UsbCamera frontCam = new UsbCamera("Front Camera", 0);
+  //uncomment when fixed by WPI
+  //private ADXRS450_Gyro myGyro = new ADXRS450_Gyro();
 
   
   
@@ -44,14 +46,14 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
-    myGyro.reset();
-    myGyro.calibrate();
+    //myGyro.reset();
+    //myGyro.calibrate();
     
   }
 
   @Override
   public void robotPeriodic() {
-    SmartDashboard.putData(myGyro);
+    //SmartDashboard.putData(myGyro);
     
    
   }
