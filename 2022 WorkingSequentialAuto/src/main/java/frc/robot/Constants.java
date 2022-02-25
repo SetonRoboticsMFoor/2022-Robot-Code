@@ -15,12 +15,10 @@ package frc.robot;
 public final class Constants {
 
     // Drive train constants //////////////////////////////////////////////////////////
-    public static final int FRONT_LEFT_MOTOR_PORT = 7;
-    public static final int FRONT_RIGHT_MOTOR_PORT = 2;
-    public static final int REAR_LEFT_MOTOR_PORT = 17;
-    public static final int REAR_RIGHT_MOTOR_PORT = 14;
+    public static final int LEFT_MOTOR_PORT = 3;
+    public static final int RIGHT_MOTOR_PORT = 13;
 
-    public static final double DRIVE_SPEED = .6;
+    public static final double DRIVE_SPEED = .75;
 
     public static final int DRIVE_STICK_PORT = 0;
 
@@ -32,14 +30,12 @@ public final class Constants {
     public static final double FORWARD_SHOOTER_SPEED = 1;
     public static final double REVERSE_SHOOTER_SPEED = 1;
 
-    /*
-    Uncomment when needed
+    
     public static final int SHOOT_STICK_PORT = 1;
     public static final int SHOOT_BUTTON_CHANNEL = 0;
-    public static final int HERD_FORWARD_BUTTON_CHANNEL = 1;
-    public static final int HERD_REVERSE_BUTTON_CHANNEL = 2;
-    */
-
+    public static final int HERD_FORWARD_BUTTON = 3;
+    public static final int HERD_REVERSE_BUTTON = 4;
+    
 
     // Autonomous constants //////////////////////////////////////////////////////////
     public static final int AUTO_DRIVE_TIME = 2;

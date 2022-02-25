@@ -24,13 +24,11 @@ public class ShooterSub extends SubsystemBase {
 
   public void spinForward() {
     shooterMotor.set(ControlMode.PercentOutput,getShootSpeed());
-    //.getRawAxis() instead of constant
   }
 
 
   public void spinReverse() {
     shooterMotor.set(ControlMode.PercentOutput,-getShootSpeed());
-    //.getRawAxis() instead of constant
   }
 
   public double getShootSpeed() {
