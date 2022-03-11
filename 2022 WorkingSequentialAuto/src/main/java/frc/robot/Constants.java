@@ -33,6 +33,9 @@ public final class Constants {
     
     public static final int SHOOT_STICK_PORT = 1;
     public static final int SHOOT_BUTTON_CHANNEL = 0;
+
+    // Herder Subsystem constants ///////////////////////////////////////////////////
+    
     public static final int HERD_FORWARD_BUTTON = 3;
     public static final int HERD_REVERSE_BUTTON = 4;
     
