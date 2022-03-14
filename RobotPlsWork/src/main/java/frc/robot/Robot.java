@@ -4,18 +4,16 @@
 
 package frc.robot;
 
-import javax.lang.model.util.ElementScanner6;
-
 import com.ctre.phoenix.motorcontrol.ControlMode;
 import com.ctre.phoenix.motorcontrol.NeutralMode;
 import com.ctre.phoenix.motorcontrol.can.WPI_VictorSPX;
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.EncoderType;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
@@ -88,8 +86,10 @@ public class Robot extends TimedRobot {
   //climber buttons
   private JoystickButton climberUpButton;
   private JoystickButton climberDownButton;
-  private JoystickButton climberWinchOutButton;
-  private JoystickButton climberWinchInButton;
+  private JoystickButton driverClimberWinchOutButton;
+  private JoystickButton driverClimberWinchInButton;
+  private JoystickButton shooterClimberWinchOutButton;
+  private JoystickButton shooterClimberWinchInButton;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -127,6 +127,9 @@ public class Robot extends TimedRobot {
     shooterReverseButton = new JoystickButton(shooterStick, 12);
     shooterLoaderUpButton = new JoystickButton(shooterStick, 10);
     shooterLoaderDownButton = new JoystickButton(shooterStick, 9);
+    shooterClimberWinchInButton = new JoystickButton(shooterStick,8);
+    shooterClimberWinchOutButton = new JoystickButton(shooterStick,7);
+
     //declare drive stick things
     driveStick = new Joystick(1);
     driverShooterForwardButton = new JoystickButton(driveStick,1);
@@ -134,16 +137,22 @@ public class Robot extends TimedRobot {
     driverLoaderDownButton = new JoystickButton(driveStick,7);
     climberUpButton = new JoystickButton(driveStick,10);
     climberDownButton = new JoystickButton(driveStick,9);
-    climberWinchInButton = new JoystickButton(driveStick,4);
-    climberWinchOutButton = new JoystickButton(driveStick,6);
+    driverClimberWinchInButton = new JoystickButton(driveStick,4);
+    driverClimberWinchOutButton = new JoystickButton(driveStick,6);
 
     //declare encoders
     //shooterPosEncoder = shooterMotor.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,10);
     frontHerderEncoder = frontHerderArm.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,12);
     rearHerderEncoder = rearHerderArm.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,3);
     climberEncoder = climberArmMotor.getEncoder();
+
     //declare gyro
     driveGyro = new ADXRS450_Gyro();
+
+    //set all encoders to zero
+    frontHerderEncoder.setPosition(0);
+    rearHerderEncoder.setPosition(0);
+    climberEncoder.setPosition(0);
 
     //set motor brake modes
     leftMotor.setIdleMode(IdleMode.kBrake);
@@ -172,9 +181,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Climber Encoder", climberEncoder.getPosition());
     SmartDashboard.putNumber("Gyro Value", driveGyro.getAngle());
 
-    SmartDashboard.putNumber("Front Arm Position", frontHerderEncoder.getPosition()/800);
-    SmartDashboard.putNumber("Rear Arm Position", rearHerderEncoder.getPosition()/800);
-    SmartDashboard.putNumber("Hat Value", shooterStick.getRawAxis(5));
+    SmartDashboard.putNumber("Front Arm Position", frontHerderEncoder.getPosition());
+    SmartDashboard.putNumber("Rear Arm Position", rearHerderEncoder.getPosition());
   }
 
   /**
@@ -192,6 +200,11 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_chooser.getSelected();
     // m_autoSelected = SmartDashboard.getString("Auto Selector", kDefaultAuto);
     System.out.println("Auto selected: " + m_autoSelected);
+
+    //set all encoders to zero (again)
+    frontHerderEncoder.setPosition(0);
+    rearHerderEncoder.setPosition(0);
+    climberEncoder.setPosition(0);
 
     //reset the timer
     timer.reset();
@@ -240,9 +253,6 @@ public class Robot extends TimedRobot {
   /** This function is called once when teleop is enabled. */
   @Override
   public void teleopInit() {
-
-    //set all encoders to zero
-    frontHerderEncoder.setPosition(0);
   }
 
   /** This function is called periodically during operator control. */
@@ -253,11 +263,17 @@ public class Robot extends TimedRobot {
     turn = driveStick.getZ();
     throttle = driveStick.getY();
 
-    /*//deadband
-    if ( Math.abs(turn)<0.1)
+    //deadband
+    //set turn to 0 if it is a small number
+    if ( Math.abs(turn)<0.05)
       turn = 0;
-    if ( Math.abs(turn)<0.1)
-    throttle = 0; */
+    else
+      turn = driveStick.getZ();
+    //set throttle to 0 if it is a small number
+    if ( Math.abs(turn)<0.05)
+      throttle = 0;
+    else
+      throttle = driveStick.getY();
 
     driveTrain.arcadeDrive(turn*.75, -throttle);
     
@@ -277,49 +293,52 @@ public class Robot extends TimedRobot {
 
     //controls for front herder arm
     //front herder
-    if(frontHerderUpButton.get()==true)
+    if(frontHerderUpButton.get() && frontHerderEncoder.getPosition()<-20)
       frontHerderArm.set(-.7);
-    else if(frontHerderDownButton.get()==true)
+    else if(frontHerderDownButton.get() && frontHerderEncoder.getPosition()>-155)
       frontHerderArm.set(.55);
     else
       frontHerderArm.stopMotor();
     //rear herder
-    if(rearHerderUpButton.get()==true/* && rearHerderEncoder.getPosition()<.77*/)
+    if(rearHerderUpButton.get() && rearHerderEncoder.getPosition()<-20)
       rearHerderArm.set(.8);
-    else if(rearHerderDownButton.get()==true/* && rearHerderEncoder.getPosition()>*/)
+    else if(rearHerderDownButton.get() && rearHerderEncoder.getPosition()>-650)
       rearHerderArm.set(-.65);
     else
     rearHerderArm.stopMotor();
 
     //climber controls
-    //put climber on shooterstick axis maybe?
-    if(climberUpButton.get()==true)
+    if(climberUpButton.get() && climberEncoder.getPosition()<=220)
       climberArmMotor.set(1);
-    else if(climberDownButton.get()==true)
+    else if(climberUpButton.get() && climberEncoder.getPosition()<248)
+    climberArmMotor.set(.75);
+    else if(climberDownButton.get() && climberEncoder.getPosition()>=25)
       climberArmMotor.set(-1);
+    else if(climberDownButton.get() && climberEncoder.getPosition()>0)
+    climberArmMotor.set(-.75);
     else
       climberArmMotor.stopMotor();
 
     //climber winch controls
-    if(climberWinchInButton.get()==true)
+    if(shooterClimberWinchInButton.get() || driverClimberWinchInButton.get())
       climberWinchMotor.set(.5);
-    else if(climberWinchOutButton.get()==true)
+    else if(shooterClimberWinchOutButton.get() || driverClimberWinchOutButton.get())
       climberWinchMotor.set(-.5);
     else
     climberWinchMotor.stopMotor();
 
     //shooter motor controls
-    if(shooterShooterForwardButton.get()==true || driverShooterForwardButton.get()==true)
+    if(shooterShooterForwardButton.get() || driverShooterForwardButton.get())
       shooterMotor.set(.45);
-    else if(shooterReverseButton.get()==true)
+    else if(shooterReverseButton.get())
       shooterMotor.set(-1);
     else
       shooterMotor.stopMotor();
 
     //shooter loader controls
-    if(shooterLoaderUpButton.get()==true || driverLoaderUpButton.get()==true)
+    if(shooterLoaderUpButton.get() || driverLoaderUpButton.get())
       loaderMotor.set(-1);
-    else if(shooterLoaderDownButton.get()==true || driverLoaderDownButton.get()==true)
+    else if(shooterLoaderDownButton.get() || driverLoaderDownButton.get())
       loaderMotor.set(1);
     else
       loaderMotor.stopMotor();
@@ -337,9 +356,76 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when test mode is enabled. */
   @Override
-  public void testInit() {}
+  public void testInit() {
+    //set all encoders to zero (again)
+    frontHerderEncoder.setPosition(0);
+    rearHerderEncoder.setPosition(0);
+    climberEncoder.setPosition(0);
+  }
 
   /** This function is called periodically during test mode. */
   @Override
-  public void testPeriodic() {}
+  public void testPeriodic() {
+    //controls for herder spinners
+    if(herderForwardButton.get()) {
+      frontHerderSpinner.set(ControlMode.PercentOutput,-1);
+      rearHerderSpinner.set(ControlMode.PercentOutput,-1);
+    }
+    else if(herderReverseButton.get()) {
+      frontHerderSpinner.set(ControlMode.PercentOutput,1);
+      rearHerderSpinner.set(ControlMode.PercentOutput, 1);
+    }
+    else {
+      frontHerderSpinner.stopMotor();
+      rearHerderSpinner.stopMotor();
+    }
+
+    //controls for front herder arm
+    //front herder
+    if(frontHerderUpButton.get())
+      frontHerderArm.set(-.7);
+    else if(frontHerderDownButton.get())
+      frontHerderArm.set(.55);
+    else
+      frontHerderArm.stopMotor();
+    //rear herder
+    if(rearHerderUpButton.get())
+      rearHerderArm.set(.8);
+    else if(rearHerderDownButton.get())
+      rearHerderArm.set(-.65);
+    else
+    rearHerderArm.stopMotor();
+
+    //climber controls
+    if(climberUpButton.get())
+      climberArmMotor.set(.25);
+    else if(climberDownButton.get())
+      climberArmMotor.set(-.25);
+    else
+      climberArmMotor.stopMotor();
+
+    //climber winch controls
+    if(shooterClimberWinchInButton.get() || driverClimberWinchInButton.get())
+      climberWinchMotor.set(.5);
+    else if(shooterClimberWinchOutButton.get() || driverClimberWinchOutButton.get())
+      climberWinchMotor.set(-.5);
+    else
+    climberWinchMotor.stopMotor();
+
+    //shooter motor controls
+    if(shooterShooterForwardButton.get() || driverShooterForwardButton.get())
+      shooterMotor.set(.45);
+    else if(shooterReverseButton.get())
+      shooterMotor.set(-1);
+    else
+      shooterMotor.stopMotor();
+
+    //shooter loader controls
+    if(shooterLoaderUpButton.get() || driverLoaderUpButton.get())
+      loaderMotor.set(-1);
+    else if(shooterLoaderDownButton.get() || driverLoaderDownButton.get())
+      loaderMotor.set(1);
+    else
+      loaderMotor.stopMotor();
+  }
 }
