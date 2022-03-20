@@ -12,8 +12,9 @@ import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkMax.IdleMode;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
 
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
-import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
@@ -38,6 +39,7 @@ public class Robot extends TimedRobot {
   //initialize variables
   double turn;
   double throttle;
+  boolean limitOverride = false;
 
   //initialize timer object
   Timer timer = new Timer();
@@ -60,9 +62,12 @@ public class Robot extends TimedRobot {
   //initialize all the sensors
   private RelativeEncoder frontHerderEncoder;
   private RelativeEncoder rearHerderEncoder;
-  //private RelativeEncoder shooterPosEncoder;
   private RelativeEncoder climberEncoder;
+  private RelativeEncoder winchEncoder;
+  private RelativeEncoder loaderEncoder;
+  private RelativeEncoder shooterEncoder;
   private ADXRS450_Gyro driveGyro;
+  //private UsbCamera frontCam;
 
   //initialize joystick and all buttons
   private Joystick shooterStick;
@@ -90,6 +95,8 @@ public class Robot extends TimedRobot {
   private JoystickButton driverClimberWinchInButton;
   private JoystickButton shooterClimberWinchOutButton;
   private JoystickButton shooterClimberWinchInButton;
+  //override button
+  private JoystickButton climberOverrideButton;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -139,20 +146,30 @@ public class Robot extends TimedRobot {
     climberDownButton = new JoystickButton(driveStick,9);
     driverClimberWinchInButton = new JoystickButton(driveStick,4);
     driverClimberWinchOutButton = new JoystickButton(driveStick,6);
+    climberOverrideButton = new JoystickButton(driveStick,11);
 
     //declare encoders
-    //shooterPosEncoder = shooterMotor.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,10);
+    shooterEncoder = shooterMotor.getEncoder();
     frontHerderEncoder = frontHerderArm.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,12);
     rearHerderEncoder = rearHerderArm.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,3);
     climberEncoder = climberArmMotor.getEncoder();
+    winchEncoder = climberWinchMotor.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,7);
+    loaderEncoder = loaderMotor.getEncoder(SparkMaxRelativeEncoder.Type.kQuadrature,10);
 
     //declare gyro
     driveGyro = new ADXRS450_Gyro();
+
+    //camera
+    //frontCam = new UsbCamera("Front Cam",0);
+    //frontCam.setFPS(10);
+    //frontCam.setResolution(320,240);
 
     //set all encoders to zero
     frontHerderEncoder.setPosition(0);
     rearHerderEncoder.setPosition(0);
     climberEncoder.setPosition(0);
+    winchEncoder.setPosition(0);
+    loaderEncoder.setPosition(0);
 
     //set motor brake modes
     leftMotor.setIdleMode(IdleMode.kBrake);
@@ -176,13 +193,16 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
-    //SmartDashboard.putNumber("Shooter Velocity", shooterPosEncoder.getVelocity());
-    //SmartDashboard.putNumber("Shooter Position",shooterPosEncoder.getPosition());
+    SmartDashboard.putNumber("Shooter Velocity", shooterEncoder.getVelocity());
     SmartDashboard.putNumber("Climber Encoder", climberEncoder.getPosition());
     SmartDashboard.putNumber("Gyro Value", driveGyro.getAngle());
 
     SmartDashboard.putNumber("Front Arm Position", frontHerderEncoder.getPosition());
     SmartDashboard.putNumber("Rear Arm Position", rearHerderEncoder.getPosition());
+    SmartDashboard.putNumber("Winch Position",winchEncoder.getPosition());
+    SmartDashboard.putNumber("LoaderPosition",loaderEncoder.getPosition());
+    SmartDashboard.putNumber("Turn",driveStick.getZ());
+    SmartDashboard.putNumber("Throttle",driveStick.getY());
   }
 
   /**
@@ -205,6 +225,8 @@ public class Robot extends TimedRobot {
     frontHerderEncoder.setPosition(0);
     rearHerderEncoder.setPosition(0);
     climberEncoder.setPosition(0);
+    winchEncoder.setPosition(0);
+    loaderEncoder.setPosition(0);
 
     //reset the timer
     timer.reset();
@@ -226,25 +248,72 @@ public class Robot extends TimedRobot {
         //BEHOLD THE JANKIEST OF ALL AUTO CODE
         //GAZE UPON MY SPAGHETTI CODE AND WEEP, YE PEASANTS
 
-        //spin up gun
-        if(timer.get()<=5)
-          shooterMotor.set(.45);
-        else
-          shooterMotor.stopMotor();
+        /*
+        SCHEDULE
+        lower climber winch and rear herder
+        spin shooter motor + keep it spinning
+        3 -4 sec: raise loader
+        4 - 5 sec: lower loader
+        5 - 8 sec: drive backwards and spin rear herder spinners
+        9 - 12 sec: drive forwards and raise herder
+        12 - 13 sec: loader up
+        13 - 14 sec: loader down
+        */
 
-        if(timer.get()>=3 && timer.get()<=4)
+        //spin up gun
+        //spin super fast if spinning slow
+        if(shooterEncoder.getVelocity()<=1000)
+          shooterMotor.set(.75);
+        //spin slower if spinning kinda slow
+        else if(shooterEncoder.getVelocity()<=1500)
+          shooterMotor.set(.5);
+        //shoot slower if spinning kinda fast
+        else if(shooterEncoder.getVelocity()<=2000)
+          shooterMotor.set(.45);
+        //otherwise shoot normal
+        else
+          shooterMotor.set(.4);
+
+        //lower climber into position
+        if(winchEncoder.getPosition()>=-4000)
+          climberWinchMotor.set(-.5);
+        else
+          climberWinchMotor.stopMotor();
+        
+        //lower back herder
+        if(timer.get()<=5&& rearHerderEncoder.getPosition()>=-650)
+          rearHerderArm.set(-.65);
+        else if(timer.get()>=9 && timer.get()<=12 && rearHerderEncoder.getPosition()<=-20)
+          rearHerderArm.set(.8);
+        else
+          rearHerderArm.stopMotor();
+
+        //after gun spins up, raise gun up for 1 second, then down for one second
+        if((timer.get()>=3 && timer.get()<=4))
           loaderMotor.set(-1);
-        else if(timer.get()<=5)
+        else if(timer.get()>=12 && timer.get()<=13)
+          loaderMotor.set(-1);
+        else if((timer.get()>=4 && timer.get()<=5))
+          loaderMotor.set(1);
+        else if(timer.get()>=13 && timer.get()<=14)
           loaderMotor.set(1);
         else
           loaderMotor.stopMotor();
           
         
-        //move off of tarmac
-        if(timer.get()>=5 && timer.get()<=8)
+        //move off of tarmac while spinning the back herder
+        if(timer.get()>=5 && timer.get()<=8) {
           driveTrain.arcadeDrive(0,-.5);
-        else
+          rearHerderSpinner.set(-1);
+        }
+        else if(timer.get()>=9 && timer.get()<=12) {
+          driveTrain.arcadeDrive(0,.5);
+          rearHerderSpinner.set(-1);
+        }
+        else {
           driveTrain.stopMotor();
+          rearHerderSpinner.stopMotor();
+        }
 
         break;
     }
@@ -263,17 +332,11 @@ public class Robot extends TimedRobot {
     turn = driveStick.getZ();
     throttle = driveStick.getY();
 
-    //deadband
-    //set turn to 0 if it is a small number
-    if ( Math.abs(turn)<0.05)
-      turn = 0;
-    else
-      turn = driveStick.getZ();
-    //set throttle to 0 if it is a small number
-    if ( Math.abs(turn)<0.05)
-      throttle = 0;
-    else
-      throttle = driveStick.getY();
+    //deadband is stupid
+    if(Math.abs(turn)<=.1)
+      turn*=.5;
+    if(Math.abs(throttle)<=.1)
+      throttle*=0;
 
     driveTrain.arcadeDrive(turn*.75, -throttle);
     
@@ -308,40 +371,61 @@ public class Robot extends TimedRobot {
     rearHerderArm.stopMotor();
 
     //climber controls
-    if(climberUpButton.get() && climberEncoder.getPosition()<=220)
+    if(climberUpButton.get() && (climberEncoder.getPosition()<=220 || limitOverride))
       climberArmMotor.set(1);
-    else if(climberUpButton.get() && climberEncoder.getPosition()<248)
+    else if(climberUpButton.get() && (climberEncoder.getPosition()<248 || limitOverride))
     climberArmMotor.set(.75);
-    else if(climberDownButton.get() && climberEncoder.getPosition()>=25)
+    else if(climberDownButton.get() && (climberEncoder.getPosition()>=25 || limitOverride))
       climberArmMotor.set(-1);
-    else if(climberDownButton.get() && climberEncoder.getPosition()>0)
+    else if(climberDownButton.get() && (climberEncoder.getPosition()>0 || limitOverride))
     climberArmMotor.set(-.75);
     else
       climberArmMotor.stopMotor();
 
     //climber winch controls
-    if(shooterClimberWinchInButton.get() || driverClimberWinchInButton.get())
+    if((shooterClimberWinchInButton.get() || driverClimberWinchInButton.get()) /*&& (winchEncoder.getPosition()<=0 || limitOverride)*/)
       climberWinchMotor.set(.5);
-    else if(shooterClimberWinchOutButton.get() || driverClimberWinchOutButton.get())
+    else if((shooterClimberWinchOutButton.get() || driverClimberWinchOutButton.get()) /*&& (winchEncoder.getPosition()>=-4100 || limitOverride)*/)
       climberWinchMotor.set(-.5);
     else
     climberWinchMotor.stopMotor();
 
     //shooter motor controls
-    if(shooterShooterForwardButton.get() || driverShooterForwardButton.get())
-      shooterMotor.set(.45);
+    if(shooterShooterForwardButton.get() || driverShooterForwardButton.get()) {
+      //spin super fast if spinning slow
+      if(shooterEncoder.getVelocity()<=1000)
+        shooterMotor.set(.75);
+      //spin slower if spinning kinda slow
+      else if(shooterEncoder.getVelocity()<=1500)
+        shooterMotor.set(.5);
+      //shoot slower if spinning kinda fast
+      else if(shooterEncoder.getVelocity()<=2000)
+        shooterMotor.set(.45);
+      //otherwise shoot normal
+      else
+        shooterMotor.set(.4);
+    }
     else if(shooterReverseButton.get())
       shooterMotor.set(-1);
     else
       shooterMotor.stopMotor();
 
     //shooter loader controls
-    if(shooterLoaderUpButton.get() || driverLoaderUpButton.get())
+    if((shooterLoaderUpButton.get() || driverLoaderUpButton.get()) && loaderEncoder.getPosition()>=0)  //PLACEHOLDER VALUE
       loaderMotor.set(-1);
-    else if(shooterLoaderDownButton.get() || driverLoaderDownButton.get())
+    else if((shooterLoaderDownButton.get() || driverLoaderDownButton.get()) && loaderEncoder.getPosition()<=100)  //PLACEHOLDER VALUE
       loaderMotor.set(1);
     else
       loaderMotor.stopMotor();
+
+    //climber limit override button
+    if(climberOverrideButton.get())
+      limitOverride = true;
+    else
+    {
+      limitOverride = false;
+    }
+
   }
 
   
@@ -361,6 +445,7 @@ public class Robot extends TimedRobot {
     frontHerderEncoder.setPosition(0);
     rearHerderEncoder.setPosition(0);
     climberEncoder.setPosition(0);
+    winchEncoder.setPosition(0);
   }
 
   /** This function is called periodically during test mode. */
@@ -406,9 +491,9 @@ public class Robot extends TimedRobot {
 
     //climber winch controls
     if(shooterClimberWinchInButton.get() || driverClimberWinchInButton.get())
-      climberWinchMotor.set(.5);
+      climberWinchMotor.set(.25);
     else if(shooterClimberWinchOutButton.get() || driverClimberWinchOutButton.get())
-      climberWinchMotor.set(-.5);
+      climberWinchMotor.set(-.25);
     else
     climberWinchMotor.stopMotor();
 
